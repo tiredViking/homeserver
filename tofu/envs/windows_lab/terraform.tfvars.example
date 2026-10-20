@@ -1,0 +1,4 @@
+zone_name   = "labzone"
+node_names  = ["pve"]
+vnet_name   = "labnet"
+subnet_cidr = "10.10.10.0/24"

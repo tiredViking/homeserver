@@ -1,0 +1,4 @@
+target_user: "immich_user"
+docker_compose_path: "files/docker-compose.yml"
+docker_env_file: "files/.env"
+immich_dir: "/home/{{ target_user }}/immich"

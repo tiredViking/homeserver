@@ -1,0 +1,126 @@
+---
+- name: Installa sudo
+  ansible.builtin.apt:
+    update_cache: yes
+    name: sudo
+    state: present
+
+- name: Crea utente con home directory e gruppo sudo
+  ansible.builtin.user:
+    name: "{{ target_user }}"
+    state: present
+    create_home: yes
+    groups: sudo
+    append: yes
+    shell: /usr/bin/bash
+    password: testtest
+
+- name: Pulisci versioni vecchie di Docker
+  ansible.builtin.apt:
+    name:
+      - docker.io
+      - docker-compose
+      - docker-doc
+      - docker-buildx
+      - podman-docker
+      - containerd
+      - runc
+    state: absent
+
+- name: Configura repository Docker
+  ansible.builtin.apt:
+    name:
+      - ca-certificates
+      - curl
+      - gpg
+      - gnupg
+    state: present
+    
+- name: Crea directory keyring
+  ansible.builtin.file:
+    path: /etc/apt/keyrings
+    state: directory  
+    mode: '0755'
+
+- name: Scarica chiave GPG Docker
+  ansible.builtin.get_url:
+    url: https://download.docker.com/linux/debian/gpg
+    dest: /etc/apt/keyrings/docker.asc
+    mode: '0644'
+
+- name: Aggiungi repository Docker
+  ansible.builtin.shell: |
+    tee /etc/apt/sources.list.d/docker.sources << EOF
+    Types: deb
+    URIs: https://download.docker.com/linux/debian
+    Suites: $(. /etc/os-release && echo "$VERSION_CODENAME")
+    Components: stable
+    Architectures: $(dpkg --print-architecture)
+    Signed-By: /etc/apt/keyrings/docker.asc
+    EOF
+  args:
+    executable: /usr/bin/bash
+    creates: /etc/apt/sources.list.d/docker.sources
+
+- name: Aggiorna apt
+  ansible.builtin.apt:
+    update_cache: yes
+
+- name: Installa Docker
+  ansible.builtin.apt:
+    name:
+      - docker-ce
+      - docker-ce-cli 
+      - containerd.io 
+      - docker-buildx-plugin 
+      - docker-compose-plugin
+    state: present
+
+- name: Aggiungi utente al gruppo docker
+  ansible.builtin.user:
+    name: "{{ target_user }}"
+    groups: docker
+    append: yes
+
+- name: Verifica che il servizio Docker sia attivo
+  ansible.builtin.service:
+    name: docker
+    state: started
+    enabled: yes
+
+- name: Crea la directory Immich
+  ansible.builtin.file:
+    path: "{{ immich_dir }}"
+    state: directory
+    owner: "{{ target_user }}"
+    group: "{{ target_user }}"
+    mode: '0755'
+
+- name: Copia docker-compose e .env
+  ansible.builtin.copy:
+    src: "{{ item.src }}"
+    dest: "{{ immich_dir }}/{{ item.dest }}"
+    owner: "{{ target_user }}"
+    group: "{{ target_user }}"
+    mode: "{{ item.mode }}"
+  loop:
+    - { src: "{{ docker_compose_path }}", dest: docker-compose.yml, mode: '0644'}
+    - { src: "{{ docker_env_file }}", dest: .env, mode: '0600'}
+
+- name: Crea directory dati Immich
+  ansible.builtin.file:
+    path: "{{ immich_dir }}/{{ item.name }}"
+    state: directory
+    owner: "{{ target_user }}"
+    group: "{{ target_user }}"
+    mode: "{{ item.mode }}"
+  loop:
+    - { name: library, mode: '0755' }
+    - { name: postgres, mode: '0700' }
+
+- name: Avvia i container con Docker Compose V2 come utente applicativo
+  community.docker.docker_compose_v2:
+    project_src: "{{ immich_dir }}"
+    state: present
+  become: true
+  become_user: "{{ target_user }}"

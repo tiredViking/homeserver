@@ -1,0 +1,7 @@
+---
+- hosts: test
+  vars_files:
+    - vars/immich_vars.yml
+  tasks:
+    - name: Immich server configuration
+      include_tasks: tasks/immich.yml
