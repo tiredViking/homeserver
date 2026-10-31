@@ -1,0 +1,56 @@
+---
+- name: Install prerequisites
+  ansible.builtin.apt:
+    name:
+      - xz-utils
+      - tar
+    state: present
+    update_cache: true
+    cache_valid_time: 3600
+
+- name: Create Trilium install folder
+  ansible.builtin.file:
+    path: "{{ install_folder }}"
+    state: directory
+    mode: "0755"
+
+- name: Download and extract Trilium binaries
+  ansible.builtin.unarchive:
+    src: "https://github.com/TriliumNext/Trilium/releases/download/{{ trilium_version }}/{{ trilium_binaries }}"
+    dest: "{{ install_folder }}"
+    remote_src: true
+    extra_opts: ["--strip-components=1"]
+    creates: "{{ install_folder }}/trilium.sh"
+  notify: Restart trilium
+
+- name: Create Trilium systemd service file
+  ansible.builtin.copy:
+    dest: /etc/systemd/system/trilium.service
+    owner: root
+    group: root
+    mode: "0644"
+    content: |
+      [Unit]
+      Description=Trilium Daemon
+      After=syslog.target network.target
+
+      [Service]
+      User=root
+      Group=root
+      Type=simple
+      ExecStart={{ install_folder }}/trilium.sh
+      WorkingDirectory={{ install_folder }}/
+      TimeoutStopSec=20
+      # KillMode=process leads to error, according to https://www.freedesktop.org/software/systemd/man/systemd.kill.html
+      Restart=always
+
+      [Install]
+      WantedBy=multi-user.target
+  notify: Restart trilium
+
+- name: Enable and start Trilium
+  ansible.builtin.systemd_service:
+    name: trilium
+    state: started
+    enabled: true
+    daemon_reload: true

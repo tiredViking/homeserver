@@ -2,6 +2,17 @@
 - hosts: test
   vars_files:
     - vars/immich_vars.yml
+    - vars/trilium_vars.yml
   tasks:
     - name: Immich server configuration
       include_tasks: tasks/immich.yml
+
+    - name: Trilium server configuration
+      include_tasks: tasks/trilium.yml
+
+  handlers:
+    - name: Restart trilium
+      ansible.builtin.systemd_service:
+        name: trilium
+        state: restarted
+        daemon_reload: true
