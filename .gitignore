@@ -1,0 +1,14 @@
+# Secrets & Configs
+.env
+ansible/vars/nextcloud_secrets.yml
+tofu/**/*.tfvars
+!tofu/**/*.tfvars.example
+
+# OpenTofu / Terraform
+.terraform/
+*.tfstate
+*.tfstate.*
+crash.log
+
+# Ansible temporary files
+.ansible/
