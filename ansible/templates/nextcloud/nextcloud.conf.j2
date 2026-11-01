@@ -1,0 +1,15 @@
+# {{ ansible_managed }}
+<VirtualHost *:80>
+  ServerName {{ nextcloud_server_name }}
+  DocumentRoot {{ nextcloud_web_root }}/
+
+  <Directory {{ nextcloud_web_root }}/>
+    Require all granted
+    AllowOverride All
+    Options FollowSymLinks MultiViews
+
+    <IfModule mod_dav.c>
+      Dav off
+    </IfModule>
+  </Directory>
+</VirtualHost>

@@ -1,0 +1,22 @@
+; {{ ansible_managed }}
+date.timezone = {{ nextcloud_php_timezone }}
+
+{% if item == 'apache2' %}
+; --- web requests only ---
+memory_limit = {{ nextcloud_php_memory_limit }}
+upload_max_filesize = {{ nextcloud_php_upload_max_filesize }}
+post_max_size = {{ nextcloud_php_post_max_size }}
+max_execution_time = {{ nextcloud_php_max_execution_time }}
+max_input_time = {{ nextcloud_php_max_input_time }}
+
+opcache.enable = 1
+opcache.interned_strings_buffer = 16
+opcache.max_accelerated_files = 10000
+opcache.memory_consumption = 128
+opcache.save_comments = 1
+opcache.revalidate_freq = 60
+{% else %}
+; --- command line only (occ, cron.php) ---
+; APCu is disabled for the CLI by default, so occ and cron would not see the cache
+apc.enable_cli = 1
+{% endif %}

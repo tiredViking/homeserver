@@ -1,0 +1,3 @@
+calibre_web_install_folder: "/opt/calibre-web"
+calibre_web_repo_url: "https://github.com/janeczku/calibre-web"
+calibre_web_venv_folder: "{{ calibre_web_install_folder }}/venv"

@@ -1,3 +1,2 @@
-trilium_version: "v0.106.1"
-trilium_binaries: "TriliumNotes-Server-{{ trilium_version }}-linux-x64.tar.xz"
-install_folder: "/opt/trilium"
+trilium_install_folder: "/opt/trilium"
+trilium_repo_url: "https://github.com/TriliumNext/Trilium/releases/download/v0.106.1/TriliumNotes-Server-v0.106.1-linux-x64.tar.xz"

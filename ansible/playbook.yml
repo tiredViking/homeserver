@@ -1,18 +1,44 @@
 ---
-- hosts: test
+- hosts: trilium
   vars_files:
-    - vars/immich_vars.yml
+    #- vars/immich_vars.yml
     - vars/trilium_vars.yml
+    #- vars/calibre-web_vars.yml
+    #- vars/nextcloud_vars.yml
+    #- vars/nextcloud_vars.yml
   tasks:
-    - name: Immich server configuration
-      include_tasks: tasks/immich.yml
+ #       - name: Immich server configuration
+ #         include_tasks: tasks/immich.yml
 
     - name: Trilium server configuration
       include_tasks: tasks/trilium.yml
+    
+#    - name: Nextcloud server configuration
+#      include_tasks: tasks/nextcloud.yml
 
   handlers:
     - name: Restart trilium
       ansible.builtin.systemd_service:
         name: trilium
+        state: restarted
+        daemon_reload: true
+
+    - name: Restart apache2
+      ansible.builtin.systemd_service:
+        name: apache2
+        state: restarted
+        daemon_reload: true
+
+- hosts: calibre
+  vars_files:
+    - vars/calibre-web_vars.yml
+  tasks:
+    - name: Calibre-Web server configuration
+      include_tasks: tasks/calibre-web.yml
+
+  handlers:
+    - name: Restart Calibre-Web
+      ansible.builtin.systemd_service:
+        name: calibre-web
         state: restarted
         daemon_reload: true

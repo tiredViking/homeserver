@@ -1,0 +1,195 @@
+# reference docs at https://docs.nextcloud.com/server/latest/admin_manual/installation/source_installation.html
+
+# -----------------
+# PHP INSTALLATION PART
+# -----------------
+
+- name: Install PHP, apache2, and sudo
+  ansible.builtin.apt:
+    update_cache: true
+    name: 
+      - php-cli
+      - php-common
+      - libapache2-mod-php
+      - php-curl
+      - php-gd
+      - php-xml
+      - php-mbstring
+      - php-zip
+      - php-mysql
+      - php-imagick
+      - apache2
+      - bzip2
+      - tar
+      - sudo
+    state: present
+  notify: Restart apache2
+
+- name: List PHP modules loaded by the CLI
+  ansible.builtin.command: php -m
+  register: nextcloud_php_m
+  changed_when: false
+  when: not ansible_check_mode
+
+- name: Work out which modules are missing
+  ansible.builtin.set_fact:
+    nextcloud_php_loaded: "{{ nextcloud_php_m.stdout_lines | map('trim') | map('lower') | list }}"
+    nextcloud_php_missing_required: "{{ nextcloud_php_required_modules | difference(nextcloud_php_m.stdout_lines | map('trim') | map('lower') | list) }}"
+    nextcloud_php_missing_optional: "{{ nextcloud_php_optional_modules | difference(nextcloud_php_m.stdout_lines | map('trim') | map('lower') | list) }}"
+  when: not ansible_check_mode
+
+- name: Assert that all required PHP modules are loaded
+  ansible.builtin.assert:
+    that:
+      - nextcloud_php_missing_required | length == 0
+    success_msg: "All required PHP modules are loaded"
+    fail_msg: "Missing required PHP modules: {{ nextcloud_php_missing_required | join(', ') }}"
+  when: not ansible_check_mode
+
+- name: Report missing optional PHP modules
+  ansible.builtin.debug:
+    msg: "Optional PHP modules not loaded: {{ nextcloud_php_missing_optional | join(', ') }}"
+  when:
+    - not ansible_check_mode
+    - nextcloud_php_missing_optional | length > 0
+
+- name: Detect PHP major.minor version
+  ansible.builtin.command:
+    argv: [php, -r, 'echo PHP_MAJOR_VERSION . "." . PHP_MINOR_VERSION;']
+  register: nextcloud_php_version_cmd
+  changed_when: false
+  check_mode: false
+
+- name: Deploy Nextcloud PHP ini overrides
+  ansible.builtin.template:
+    src: nextcloud/99-nextcloud.ini.j2
+    dest: "/etc/php/{{ nextcloud_php_version_cmd.stdout }}/{{ item }}/conf.d/99-nextcloud.ini"
+    owner: root
+    group: root
+    mode: "0644"
+  loop:
+    - apache2
+    - cli
+  notify: Restart apache2
+
+# ------------------
+# apache web server configuration part
+# ------------------
+
+- name: Install Apache
+  ansible.builtin.apt:
+    name: apache2
+    state: present
+
+- name: Enable required Apache modules
+  community.general.apache2_module:
+    name: "{{ item }}"
+    state: present
+  loop:
+    - rewrite
+    - headers
+    - env
+    - dir
+    - mime
+  notify: Restart apache2
+
+- name: Deploy Nextcloud virtual host
+  ansible.builtin.template:
+    src: nextcloud/nextcloud.conf.j2
+    dest: /etc/apache2/sites-available/nextcloud.conf
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Restart apache2
+
+- name: Enable Nextcloud site
+  ansible.builtin.command:
+    cmd: a2ensite nextcloud.conf
+    creates: /etc/apache2/sites-enabled/nextcloud.conf
+  notify: Restart apache2
+
+- name: Disable the default Apache site #Debian 000-default.conf automatically answers if not disabled
+  ansible.builtin.command:
+    cmd: a2dissite 000-default.conf
+    removes: /etc/apache2/sites-enabled/000-default.conf
+  notify: Restart apache2
+
+- name: Validate Apache configuration
+  ansible.builtin.command: apache2ctl configtest
+  changed_when: false
+
+- name: Enable required module mod_rewrite
+  ansible.builtin.command: a2enmod rewrite
+
+# ------------------------
+# Database setup
+# ------------------------
+
+- name: Install MariaDB and the Python driver Ansible needs
+  ansible.builtin.apt:
+    name:
+      - mariadb-server
+      - python3-pymysql
+    state: present
+    update_cache: true
+    cache_valid_time: 3600
+
+- name: Make sure MariaDB is running and enabled
+  ansible.builtin.systemd_service:
+    name: mariadb
+    state: started
+    enabled: true
+
+- name: Create the Nextcloud database
+  community.mysql.mysql_db:
+    name: "{{ nextcloud_db_name }}"
+    encoding: utf8mb4
+    collation: utf8mb4_general_ci
+    state: present
+    login_unix_socket: /run/mysqld/mysqld.sock
+
+- name: Create the Nextcloud database user with privileges
+  community.mysql.mysql_user:
+    name: "{{ nextcloud_db_user }}"
+    host: localhost
+    password: "{{ nextcloud_db_password }}"
+    priv: "{{ nextcloud_db_name }}.*:ALL"
+    state: present
+    login_unix_socket: /run/mysqld/mysqld.sock
+  no_log: true
+
+- name: Create download cache directory
+  ansible.builtin.file:
+    path: "{{ nextcloud_download_dir }}"
+    state: directory
+    mode: "0755"
+
+- name: Download Nextcloud and verify its SHA-256 checksum
+  ansible.builtin.get_url:
+    url: "{{ nextcloud_download_url }}"
+    dest: "{{ nextcloud_download_dir }}/{{ nextcloud_archive }}"
+    checksum: "sha256:{{ nextcloud_download_url }}.sha256"
+    mode: "0644"
+
+- name: Create the web root
+  ansible.builtin.file:
+    path: "{{ nextcloud_web_root }}"
+    state: directory
+    mode: "0755"
+
+- name: Extract Nextcloud into the web root
+  ansible.builtin.unarchive:
+    src: "{{ nextcloud_download_dir }}/{{ nextcloud_archive }}"
+    dest: "{{ nextcloud_web_root }}"
+    remote_src: true
+    extra_opts: ["--strip-components=1"]
+    creates: "{{ nextcloud_web_root }}/occ"
+
+- name: Change ownership of Nextcloud directories to http user
+  ansible.builtin.file:
+    path: "{{ nextcloud_web_root }}"
+    state: directory
+    owner: www-data
+    group: www-data
+    mode: "0750"
+    recurse: true

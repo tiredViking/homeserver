@@ -1,0 +1,17 @@
+# {{ ansible_managed }}
+[Unit]
+Description=Trilium Daemon
+After=syslog.target network.target
+
+[Service]
+User=root
+Group=root
+Type=simple
+ExecStart={{ trilium_install_folder }}/trilium.sh
+WorkingDirectory={{ trilium_install_folder }}/
+TimeoutStopSec=20
+# KillMode=process leads to error, according to https://www.freedesktop.org/software/systemd/man/systemd.kill.html
+Restart=always
+
+[Install]
+WantedBy=multi-user.target

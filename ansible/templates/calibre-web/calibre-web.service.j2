@@ -1,0 +1,14 @@
+# {{ ansible_managed }}
+[Unit]
+Description=Calibre-Web
+After=network.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory={{ calibre_web_install_folder }}
+ExecStart={{ calibre_web_venv_folder }}/bin/python3 cps.py
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target

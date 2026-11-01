@@ -1,0 +1,51 @@
+nextcloud_php_timezone: UTC
+nextcloud_php_memory_limit: 512M
+nextcloud_php_upload_max_filesize: 5G
+nextcloud_php_post_max_size: 5G
+nextcloud_php_max_execution_time: 3600
+nextcloud_php_max_input_time: 3600
+
+nextcloud_server_name: cloud.home.lan
+nextcloud_web_root: /var/www/nextcloud
+nextcloud_data_dir: /hard_disk/nextcloud_data
+
+nextcloud_version: "34.0.5"          # pick the version you want and check that the file exists
+nextcloud_archive: "nextcloud-{{ nextcloud_version }}.tar.bz2"
+nextcloud_download_url: "https://download.nextcloud.com/server/releases/{{ nextcloud_archive }}"
+nextcloud_download_dir: /var/cache/nextcloud
+
+nextcloud_db_name: nextcloud
+nextcloud_db_user: nextcloud
+
+# vault file:
+# nextcloud_db_password
+# nexcloud_db_admin
+
+nextcloud_php_required_modules:
+  - ctype
+  - curl
+  - dom
+  - fileinfo
+  - gd
+  - libxml
+  - mbstring
+  - openssl
+  - pdo_mysql
+  - posix
+  - session
+  - simplexml
+  - xmlreader
+  - xmlwriter
+  - zip
+  - zlib
+
+nextcloud_php_optional_modules:
+  - intl
+  - sodium
+  - apcu
+  - redis
+  - imagick
+  - bcmath
+  - gmp
+  - exif
+  - pcntl

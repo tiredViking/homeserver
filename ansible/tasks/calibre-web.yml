@@ -1,0 +1,45 @@
+---
+# Docs at https://github.com/janeczku/calibre-web/wiki/Manual-installation
+- name: Install prerequisites
+  ansible.builtin.apt:
+    update_cache: true
+    name:
+      - git
+      - imagemagick
+      - python3-pip
+      - python3-venv
+    state: present 
+
+- name: Clone Calibre-Web repository
+  ansible.builtin.git:
+    repo: "{{ calibre_web_repo_url }}"
+    dest: "{{ calibre_web_install_folder }}"
+  notify: Restart Calibre-Web
+
+- name: Create Python virtual environment
+  ansible.builtin.command:
+    cmd: python3 -m venv venv
+    creates: "{{ calibre_web_venv_folder }}/bin/python3"
+    chdir: "{{ calibre_web_install_folder }}"
+
+- name: Install Calibre-Web dependencies
+  ansible.builtin.pip:
+    requirements: "{{ calibre_web_install_folder }}/requirements.txt"
+    virtualenv: "{{ calibre_web_venv_folder }}"
+  notify: Restart Calibre-Web
+
+- name: Install Calibre-Web systemd unit
+  ansible.builtin.template:
+    src: calibre-web/calibre-web.service.j2
+    dest: /etc/systemd/system/calibre-web.service
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Restart Calibre-Web
+
+- name: Enable and start Calibre-Web
+  ansible.builtin.systemd_service:
+    name: calibre-web
+    state: started
+    enabled: true
+    daemon_reload: true
