@@ -28,6 +28,7 @@
     [https://docs.immich.app/install/docker-compose](https://docs.immich.app/install/docker-compose)
   - service on port 2283 
 ### Tree structure
+```
 .
 ├── files/                      # Static files deployed by Ansible
 │   └── immich/
@@ -54,7 +55,7 @@
     ├── nextcloud_secrets.yml   # Sensitive credentials for Nextcloud
     ├── nextcloud_vars.yml      # Configuration variables for Nextcloud
     └── trilium_vars.yml        # Configuration variables for Trilium
-
+```
 ## TOFU
 ### Status
 For now just testing stuff, will be changed
