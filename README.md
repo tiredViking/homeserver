@@ -24,7 +24,7 @@
   - **necessary to modify db password and user, in var secrets file**
   - setup as virtual image (no directory)
   - docs at [https://docs.nextcloud.com/server/latest/admin_manual/installation/source_installation.html](https://docs.nextcloud.com/server/latest/admin_manual/installation/source_installation.html)
-  - after running the playbook, nextcloud installation wizard can be found at *http://<server-ip>:8080*
+  - after running the playbook, nextcloud installation wizard can be found at *http://server-ip:8080*
 4. **Immich:**
   - installed in a debian 13 vm as a docker container; docs at
     [https://docs.immich.app/install/docker-compose](https://docs.immich.app/install/docker-compose)
