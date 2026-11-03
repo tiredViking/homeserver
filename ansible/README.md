@@ -15,4 +15,4 @@
 - templates/nextcloud contains the following:
     - *99-nextcloud.ini.j2*: this is the INI configuration for PHP
     - *nextcloud.conf*: apache web server configuration (configured  as virtual host)
-- the playbook sets up nextcloud; after the playbook runs, connect to *http://<server_ip>/nextcloud*:wa
+- the playbook sets up nextcloud; after the playbook runs, connect to *http://<server_ip>/nextcloud:8080*
